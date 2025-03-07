@@ -3,6 +3,7 @@ import io
 from datetime import datetime, date
 
 from django.core.files.uploadedfile import UploadedFile
+from django.db import transaction, connection
 from rest_framework import serializers
 
 from fund.models import Fund, StrategyType, FundName
@@ -36,17 +37,16 @@ def parse_csv(csv_file: UploadedFile) -> list[str]:
             try:
                 fund_name_str, strategy_str, amount_str, inception_str = row
 
-                fund_name, _ = FundName.objects.get_or_create(name=fund_name_str)
-                strategy, _ = StrategyType.objects.get_or_create(description=strategy_str)
+                fund_name = FundName(name=fund_name_str)
+                strategy = StrategyType(description=strategy_str)
+                fund_names_to_create.append(fund_name)
+                strategies_to_create.append(strategy)
 
                 amount = float(amount_str)
                 inception = datetime.strptime(inception_str, "%Y-%m-%d").date()
 
-                Fund.objects.update_or_create( # Is this definitely what we want?
-                    fund=fund_name,
-                    strategy=strategy,
-                    amount=amount,
-                    inception=inception,
+                funds_to_create.append(
+                    (fund_name_str, strategy_str, amount, inception)
                 )
 
             except ValueError as e:
@@ -56,5 +56,39 @@ def parse_csv(csv_file: UploadedFile) -> list[str]:
 
     except ValueError as e:
         errors.append(f"File {csv_file.name}: Error parsing file {e}")
+
+    with transaction.atomic():
+        temp = FundName.objects.bulk_create(
+            fund_names_to_create, ignore_conflicts=True
+        )
+        fund_names_temp = {obj.name for obj in temp}
+
+        temp = StrategyType.objects.bulk_create(
+            strategies_to_create, ignore_conflicts=True
+        )
+        strategies_temp = {obj.description for obj in temp}
+        fund_names = {
+            obj.name: obj
+            for obj in FundName.objects.filter(name__in=fund_names_temp)
+        }
+        strategies = {
+            obj.description: obj
+            for obj in StrategyType.objects.filter(
+                description__in=strategies_temp
+            )
+        }
+
+        Fund.objects.bulk_create(
+            (
+                Fund(
+                    fund=fund_names[fund_name],
+                    strategy=strategies[strategy],
+                    amount=amount,
+                    inception=inception,
+                )
+                for fund_name, strategy, amount, inception in funds_to_create
+            ),
+            ignore_conflicts=True,
+        )
 
     return errors
