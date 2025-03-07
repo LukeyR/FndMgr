@@ -3,6 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <title>Upload CSV</title>
+    <style>
+        body {
+            font-family: sans-serif;
+        }
+    </style>
 </head>
 <body>
 
@@ -17,6 +22,10 @@
     {% for error in errors %}
         <p>{{ error }}</p>
     {% endfor %}
+{% endif %}
+
+{% if success_count or errors %}
+    <p>Succeeded: {{ success_count }} / {{ total_count }}</p>
 {% endif %}
 
 <a href="{% url "fund_list"%}"><h2>Back to list</h2></a>

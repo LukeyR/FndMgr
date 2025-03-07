@@ -1,7 +1,6 @@
 from django.db.models import Sum
-from django.http import HttpResponse, HttpRequest, HttpResponseRedirect
+from django.http import HttpRequest
 from django.shortcuts import render
-from django.urls import reverse
 from rest_framework import viewsets
 
 from fund.filters import FundFilter
@@ -27,7 +26,7 @@ def index(request):
         funds = funds.filter(strategy__id=strategy_filter)
 
     total_funds_count = funds.count()
-    total_aum_sum = funds.aggregate(Sum("amount"))["amount__sum"]
+    total_aum_sum = f"${funds.aggregate(Sum("amount"))["amount__sum"]:,}"
 
     strategies = StrategyType.objects.filter(funds__isnull=False).distinct()
 
@@ -47,12 +46,12 @@ def csv_upload(request: HttpRequest):
         form = CSVUploadForm(request.POST, request.FILES)
 
         if form.is_valid():
-            errors = parse_csv(request.FILES["csv_upload"])
+            errors, successes = parse_csv(request.FILES["csv_upload"])
 
             return render(
                 request,
                 "fund/upload_csv.html",
-                {"form": form, "errors": errors},
+                {"form": form, "errors": errors, "success_count": successes, "total_count": successes+len(errors)},
             )
     else:
         form = CSVUploadForm()

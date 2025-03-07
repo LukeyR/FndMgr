@@ -20,11 +20,12 @@ class FundSerializer(serializers.ModelSerializer):
         fields = ["id", "fund", "strategy", "amount", "inception"]
 
 
-def parse_csv(csv_file: UploadedFile) -> list[str]:
+def parse_csv(csv_file: UploadedFile) -> tuple[list[str], int]:
     errors: list[str] = []
     fund_names_to_create: list[FundName] = []
     strategies_to_create: list[StrategyType] = []
     funds_to_create: list[tuple[str, str, float, date]] = []
+    total_lines = 0
 
     try:
         decoded_file = csv_file.read().decode("utf-8")
@@ -33,6 +34,7 @@ def parse_csv(csv_file: UploadedFile) -> list[str]:
 
         __headers = next(csv_reader)
 
+        line_num = 0
         for line_num, row in enumerate(csv_reader, start=1):
             try:
                 fund_name_str, strategy_str, amount_str, inception_str = row
@@ -51,8 +53,10 @@ def parse_csv(csv_file: UploadedFile) -> list[str]:
 
             except ValueError as e:
                 errors.append(
-                    f"File {csv_file.name} (line: {line_num}): Error parsing line {e}"
+                    f"File {csv_file.name} (line: {line_num}): Error parsing entry {e}"
                 )
+        total_lines = line_num
+
 
     except ValueError as e:
         errors.append(f"File {csv_file.name}: Error parsing file {e}")
@@ -91,4 +95,4 @@ def parse_csv(csv_file: UploadedFile) -> list[str]:
             ignore_conflicts=True,
         )
 
-    return errors
+    return errors, total_lines-len(errors)
