@@ -1,0 +1,8 @@
+{
+  "name": "Fund Manager",
+  "forwardPorts": [8000],
+  "build": {
+    "context": "../",
+    "dockerfile": "../Dockerfile"
+  }
+}

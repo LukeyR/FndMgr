@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Upload CSV</title>
+</head>
+<body>
+
+<form action="{% url "csv_upload" %}" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form }}
+    <input type="submit" value="Submit">
+</form>
+
+{% if errors %}
+    <h2>Errors detected parsing CSV</h2>
+    {% for error in errors %}
+        <p>{{ error }}</p>
+    {% endfor %}
+{% endif %}
+
+<a href="{% url "fund_list"%}"><h2>Back to list</h2></a>
+
+</body>
+</html>

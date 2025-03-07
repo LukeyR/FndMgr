@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fund List</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+<h1>Fund List</h1>
+
+<a href="{% url "csv_upload"%}"><h2>Upload CSV</h2></a>
+
+<form method="get">
+    <label for="strategy-filter">Filter by Strategy:</label>
+    <select name="strategy" id="strategy-filter" onchange="this.form.submit()">
+        <option value="">All Strategies</option>
+        {% for strategy in strategies %}
+            <option value="{{ strategy.id }}" {% if strategy.id == strategy_filter %}selected{% endif %}>{{ strategy }}</option>
+        {% endfor %}
+    </select>
+</form>
+
+<table>
+    <thead>
+    <tr>
+        <th>Name</th>
+        <th>Strategy</th>
+        <th>AUM (USD)</th>
+        <th>Inception Date</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for fund in funds %}
+        <tr>
+            <td>{{ fund.fund.name }}</td>
+            <td>{{ fund.strategy.description }}</td>
+            <td>{{ fund.amount }}</td> <td>{{ fund.inception|date:"Y-m-d" }}</td> </tr>
+    {% empty %}
+        <tr><td colspan="4">No funds available.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<p>Total Funds: {{ total_funds_count }} {% if strategy_filter %} (Filtered by Strategy: {{ strategy_filter }}) {% endif %}</p>
+<p>Total AUM (USD): {{ total_aum_sum }} {% if strategy_filter %} (Filtered by Strategy: {{ strategy_filter }}) {% endif %}</p>
+
+</body>
+</html>
